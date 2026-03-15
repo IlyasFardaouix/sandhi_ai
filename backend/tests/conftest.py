@@ -11,6 +11,8 @@ from sqlalchemy.pool import StaticPool
 
 # Use in-memory SQLite for tests to avoid DB setup
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+# Disable the APScheduler background scheduler during tests
+os.environ.setdefault("DISABLE_SCHEDULER", "true")
 
 from db.database import Base, get_db
 from main import app

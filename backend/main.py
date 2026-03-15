@@ -1,5 +1,6 @@
 import time
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -15,6 +16,8 @@ from middleware.error_handler import (
 )
 from core.encryption import ensure_encryption_key_for_production
 from core.logging_config import configure_logging
+from core.config import settings
+from services.job_scheduler import JobSchedulerService
 
 configure_logging()
 
@@ -32,10 +35,22 @@ _init_db()
 run_mcp_migration_if_needed()
 ensure_encryption_key_for_production()
 
+_scheduler_service = JobSchedulerService()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if not settings.DISABLE_SCHEDULER:
+        _scheduler_service.start()
+    yield
+    _scheduler_service.stop()
+
+
 app = FastAPI(
     title="Sandhi AI API",
     description="API for the Sandhi AI Platform",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS middleware
